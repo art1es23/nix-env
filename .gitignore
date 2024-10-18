@@ -1,0 +1,3 @@
+/.config/nvim/node-modules/
+/.config/nvim/lazy-lock.json
+/.config/nvim/package-lock.json

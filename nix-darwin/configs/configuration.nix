@@ -15,6 +15,7 @@
         bat
         zoxide
         eza
+        glow
         thefuck
         fd
         git
@@ -63,7 +64,6 @@
     [
       (pkgs.nerdfonts.override { fonts = [ "JetBrainsMono" "Meslo" "FiraCode"]; })
     ];
-
 
   system.activationScripts.applications.text = let
     env = pkgs.buildEnv {
@@ -120,6 +120,9 @@
     screencapture.location = "~/Pictures/screenshots";
     screensaver.askForPasswordDelay = 10;
   };
+
+  home-manager.backupFileExtension = "backup";
+  nix.configureBuildUsers = true;
 
   # Auto upgrade nix package and the daemon service.
   services.nix-daemon.enable = true;
