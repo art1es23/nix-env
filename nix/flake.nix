@@ -1,35 +1,55 @@
 {
-  description = "Example Darwin system flake";
+  description = "qmpwwsd Darwin system flake";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    nix-darwin.url = "github:LnL7/nix-darwin";
-    nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
+    nix-darwin = {
+      url = "github:LnL7/nix-darwin";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nix-homebrew.url = "github:zhaofengli-wip/nix-homebrew";
+    # wezterm = {
+    #   url = "github:wez/wezterm/main?dir=nix";
+    #   inputs.nixpkgs.follows = "nixpkgs";
+    # };
   };
 
+  # outputs = inputs@{ self, nix-darwin, nixpkgs, nix-homebrew, wezterm }:
   outputs = inputs@{ self, nix-darwin, nixpkgs, nix-homebrew }:
   let
-    configuration = { pkgs, config, ... }: {
+    configuration = { pkgs, config, inputs, ... }: {
+      environment.shells = [ pkgs.bash pkgs.zsh ];
+      environment.loginShell = pkgs.zsh;
 
+      # Allow to install unfree apps as like Obsidian
       nixpkgs.config.allowUnfree = true;
+
       # List packages installed in system profile. To search by name, run:
       # $ nix-env -qaP | grep wget
-      environment.systemPackages =
-        [ 
+      environment.systemPackages = [ 
             pkgs.mkalias
-            pkgs.wezterm
+            pkgs.ripgrep
+            pkgs.fzf
+            pkgs.direnv
+            pkgs.bat
+            pkgs.zoxide
+            pkgs.fd
+            pkgs.git
+            pkgs.lazygit
+            pkgs.lazydocker
             pkgs.alacritty
             pkgs.starship
             pkgs.neovim
             pkgs.tmux
             pkgs.obsidian
+            # inputs.wezterm.packages.${pkgs.system}.default
         ];
 
       homebrew = {
           enable = true;
           brews = [
             "mas"
+            "imagemagick"
           ];
           casks = [
             "hammerspoon"
@@ -50,12 +70,14 @@
             # "Yoink" = 457622435;
           };
           onActivation.cleanup = "zap";
+          onActivation.upgrade = true;
+          onActivation.autoUpdate = true;
         };
 
       # font-meslo-lg-nerd-font
       fonts.packages = 
         [
-          (pkgs.nerdfonts.override { fonts = [ "JetBrainsMono" ]; })
+          (pkgs.nerdfonts.override { fonts = [ "JetBrainsMono" "Meslo" "FiraCode"]; })
         ];
 
 
@@ -79,6 +101,42 @@
           done
         '';
 
+      system.defaults = {
+        NSGlobalDomain.AppleInterfaceStyle = "Dark";
+        NSGlobalDomain.AppleWindowTabbingMode = "fullscreen";
+        NSGlobalDomain.NSWindowShouldDragOnGesture = true;
+
+        dock.autohide = true;
+        dock.tilesize = 54;
+        dock.magnification = true;
+        dock.largesize = 75;
+        dock.mru-spaces = false;
+        dock.show-process-indicators = true;
+        dock.enable-spring-load-actions-on-all-items = true;
+        dock.mouse-over-hilite-stack = true;
+
+        # WindowManager.GloballyEnabled = true;
+        # WindowManager.AutoHide = true;
+        WindowManager.EnableStandardClickToShowDesktop = false;
+        WindowManager.StandardHideDesktopIcons = true;
+        WindowManager.StandardHideWidgets = true;
+        # WindowManager.StageManagerHideWidgets = true;
+
+        finder.AppleShowAllExtensions = true;
+        finder.FXPreferredViewStyle = "clmv";
+        finder._FXSortFoldersFirst = true;
+        finder.ShowPathbar = true;
+
+        magicmouse.MouseButtonMode = "OneButton";
+        trackpad.TrackpadThreeFingerDrag = true;
+
+        menuExtraClock.Show24Hour = true;
+
+        loginwindow.LoginwindowText = "qmpwwsd <code>";
+        screencapture.location = "~/Pictures/screenshots";
+        screensaver.askForPasswordDelay = 10;
+      };
+
       # Auto upgrade nix package and the daemon service.
       services.nix-daemon.enable = true;
       # nix.package = pkgs.nix;
@@ -99,12 +157,18 @@
 
       # The platform the configuration will be used on.
       nixpkgs.hostPlatform = "aarch64-darwin";
+
+      # Allow to use TouchID
+      security.pam.enableSudoTouchIdAuth = true;
     };
   in
   {
     # Build darwin flake using:
     # $ darwin-rebuild build --flake .#qmpwwsd-MacBook-Air
     darwinConfigurations."qmpwwsd-MacBook-Air" = nix-darwin.lib.darwinSystem {
+      system = "aarch64-darwin";
+      specialArgs = { inherit inputs self; };
+
       modules = [ 
           configuration
           nix-homebrew.darwinModules.nix-homebrew
