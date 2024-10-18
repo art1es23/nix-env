@@ -52,5 +52,7 @@ config.keys = {
 	},
 }
 
+config.front_end = "WebGpu"
+
 -- and finally, return the configuration to wezterm
 return config
